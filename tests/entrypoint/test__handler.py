@@ -4,8 +4,9 @@ from typing import Iterator, Optional, Tuple
 
 from eth_validator_watcher import entrypoint
 from eth_validator_watcher.entrypoint import _handler
+from eth_validator_watcher.messengers import Messenger
 from eth_validator_watcher.models import BeaconType, Genesis, Validators, Spec
-from eth_validator_watcher.utils import LimitedDict, Slack
+from eth_validator_watcher.utils import LimitedDict
 from eth_validator_watcher.web3signer import Web3Signer
 from freezegun import freeze_time
 from pytest import raises
@@ -24,6 +25,7 @@ def test_fee_recipient_set_while_execution_url_not_set() -> None:
             web3signer_url=None,
             fee_recipient="something",
             slack_channel="MY SLACK CHANNEL",
+            telegram_channel="MY TELEGRAM CHANNEL",
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
@@ -39,6 +41,7 @@ def test_fee_recipient_not_valid() -> None:
             web3signer_url=None,
             fee_recipient="something",
             slack_channel="MY SLACK CHANNEL",
+            telegram_channel="MY TELEGRAM CHANNEL",
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
@@ -54,6 +57,7 @@ def test_slack_token_not_defined() -> None:
             web3signer_url=None,
             fee_recipient=None,
             slack_channel="MY SLACK CHANNEL",
+            telegram_channel="MY TELEGRAM CHANNEL",
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
@@ -105,6 +109,7 @@ def test_invalid_pubkeys() -> None:
             web3signer_url=None,
             fee_recipient=None,
             slack_channel=None,
+            telegram_channel=None,
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
@@ -162,6 +167,7 @@ def test_chain_not_ready() -> None:
         web3signer_url=None,
         fee_recipient=None,
         slack_channel=None,
+        telegram_channel=None,
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=[],
         liveness_file=Path("/path/to/liveness"),
@@ -273,7 +279,7 @@ def test_nominal() -> None:
         indexes_that_previously_missed_attestation: set[int],
         epoch_to_index_to_validator_index: LimitedDict,
         epoch: int,
-        slack: Slack,
+        messenger: Messenger,
     ) -> set[int]:
         assert indexes_that_missed_attestation == {0, 4}
         assert indexes_that_previously_missed_attestation == set()
@@ -283,7 +289,7 @@ def test_nominal() -> None:
             4: Validator(pubkey="0xeee", effective_balance=32000000000, slashed=False),
         }
         assert epoch == 1
-        assert isinstance(slack, Slack)
+        assert isinstance(messenger, Messenger)
 
         return {4}
 
@@ -306,14 +312,14 @@ def test_nominal() -> None:
         last_processed_finalized_slot: int,
         slot: int,
         pubkeys: set[str],
-        slack: Slack,
+        messenger: Messenger,
         slots_per_epoch: int = 32,
     ) -> int:
         assert isinstance(beacon, Beacon)
         assert last_processed_finalized_slot == 63
         assert slot in {63, 64}
         assert pubkeys == {"0xaaa", "0xbbb", "0xccc", "0xddd", "0xeee", "0xfff"}
-        assert isinstance(slack, Slack)
+        assert isinstance(messenger, Messenger)
 
         return 63
 
@@ -340,14 +346,14 @@ def test_nominal() -> None:
         potential_block: str | None,
         slot: int,
         pubkeys: set[str],
-        slack: Slack,
+        messenger: Messenger,
         slots_per_epoch: int = 32,
     ) -> bool:
         assert isinstance(beacon, Beacon)
         assert potential_block == "A BLOCK"
         assert slot in {63, 64}
         assert pubkeys == {"0xaaa", "0xbbb", "0xccc", "0xddd", "0xeee", "0xfff"}
-        assert isinstance(slack, Slack)
+        assert isinstance(messenger, Messenger)
 
         return True
 
@@ -390,6 +396,7 @@ def test_nominal() -> None:
     entrypoint.write_liveness_file = write_liveness_file  # type: ignore
 
     environ["SLACK_TOKEN"] = "my_slack_token"
+    environ["TELEGRAM_TOKEN"] = "my_telegram_token"
 
     _handler(
         beacon_url="http://localhost:5052",
@@ -398,6 +405,7 @@ def test_nominal() -> None:
         web3signer_url="http://localhost:9000",
         fee_recipient=None,
         slack_channel="my slack channel",
+        telegram_channel="my telegram channel",
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=["http://my-awesome-relay.com"],
         liveness_file=Path("/path/to/liveness"),

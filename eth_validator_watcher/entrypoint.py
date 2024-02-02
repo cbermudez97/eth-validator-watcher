@@ -16,6 +16,7 @@ from .entry_queue import export_duration_sec as export_entry_queue_dur_sec
 from .execution import Execution
 from .exited_validators import ExitedValidators
 from .fee_recipient import process_fee_recipient
+from .messengers import Messenger, Slack, Telegram, MultiMessenger
 from .missed_attestations import (
     process_double_missed_attestations,
     process_missed_attestations,
@@ -33,7 +34,6 @@ from .utils import (
     SLOT_FOR_MISSED_ATTESTATIONS_PROCESS,
     SLOT_FOR_REWARDS_PROCESS,
     LimitedDict,
-    Slack,
     convert_seconds_to_dhms,
     eth1_address_lower_0x_prefixed,
     get_our_pubkeys,
@@ -95,6 +95,11 @@ def handler(
     slack_channel: Optional[str] = Option(
         None,
         help="Slack channel to send alerts - SLACK_TOKEN env var must be set",
+        show_default=False,
+    ),
+    telegram_channel: Optional[str] = Option(
+        None,
+        help="Telegram channel to send alerts - TELEGRAM_TOKEN env var must be set",
         show_default=False,
     ),
     beacon_type: BeaconType = Option(
@@ -164,6 +169,7 @@ def handler(
     Finally, this program exports the following sets of data from:
     - Prometheus (you can use a Grafana dashboard to monitor your validators)
     - Slack
+    - Telegram
     - logs
 
     Prometheus server is automatically exposed on port 8000.
@@ -176,6 +182,7 @@ def handler(
             web3signer_url,
             fee_recipient,
             slack_channel,
+            telegram_channel,
             beacon_type,
             relay_url,
             liveness_file,
@@ -191,12 +198,14 @@ def _handler(
     web3signer_url: str | None,
     fee_recipient: str | None,
     slack_channel: str | None,
+    telegram_channel: str | None,
     beacon_type: BeaconType,
     relays_url: List[str],
     liveness_file: Path | None,
 ) -> None:
     """Just a wrapper to be able to test the handler function"""
     slack_token = environ.get("SLACK_TOKEN")
+    telegram_token = environ.get("TELEGRAM_TOKEN")
 
     if fee_recipient is not None and execution_url is None:
         raise typer.BadParameter(
@@ -214,11 +223,35 @@ def _handler(
             "SLACK_TOKEN env var must be set if you want to use `slack-channel`"
         )
 
-    slack = (
-        Slack(slack_channel, slack_token)
-        if slack_channel is not None and slack_token is not None
-        else None
-    )
+    if telegram_channel is not None and telegram_token is None:
+        raise typer.BadParameter(
+            "TELEGRAM_TOKEN env var must be set if you want to use `telegram-channel`"
+        )
+
+    # Create messengers
+    messenger: Messenger = None
+    messengers: list[Messenger | None] = [
+        # Slack
+        (
+            Slack(slack_channel, slack_token)
+            if slack_channel is not None and slack_token is not None
+            else None
+        ),
+        # Telegram
+        (
+            Telegram(telegram_channel, telegram_token)
+            if telegram_channel is not None and telegram_token is not None
+            else None
+        ),
+    ]
+    for candidate in messengers:
+        if candidate is not None:
+            if messenger is None:
+                messenger = candidate
+            elif isinstance(messenger, MultiMessenger):
+                messenger.messengers.append(candidate)
+            else:
+                messenger = MultiMessenger(messenger, candidate)
 
     beacon = Beacon(beacon_url)
     execution = Execution(execution_url) if execution_url is not None else None
@@ -233,8 +266,8 @@ def _handler(
     our_epoch2active_idx2val = LimitedDict(3)
     net_epoch2active_idx2val = LimitedDict(3)
 
-    exited_validators = ExitedValidators(slack)
-    slashed_validators = SlashedValidators(slack)
+    exited_validators = ExitedValidators(messenger)
+    slashed_validators = SlashedValidators(messenger)
 
     last_missed_attestations_process_epoch: int | None = None
     last_rewards_process_epoch: int | None = None
@@ -374,7 +407,7 @@ def _handler(
                 our_validators_indexes_that_missed_previous_attestation,
                 our_epoch2active_idx2val,
                 epoch,
-                slack,
+                messenger,
             )
 
             last_missed_attestations_process_epoch = epoch
@@ -409,7 +442,7 @@ def _handler(
             last_processed_finalized_slot,
             slot,
             our_pubkeys,
-            slack,
+            messenger,
             slots_per_epoch=slots_per_epoch,
         )
 
@@ -434,7 +467,7 @@ def _handler(
                 our_active_idx2val,
                 execution,
                 fee_recipient,
-                slack,
+                messenger,
                 slots_per_epoch=slots_per_epoch,
             )
 
@@ -443,7 +476,7 @@ def _handler(
             potential_block,
             slot,
             our_pubkeys,
-            slack,
+            messenger,
             slots_per_epoch=slots_per_epoch,
         )
 

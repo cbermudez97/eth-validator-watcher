@@ -1,4 +1,5 @@
 from eth_validator_watcher.models import Validators
+from eth_validator_watcher.messengers import Messenger
 from eth_validator_watcher.slashed_validators import (
     SlashedValidators,
     metric_our_slashed_validators_count,
@@ -9,16 +10,16 @@ Validator = Validators.DataItem.Validator
 
 
 def test_process_slashed_validators():
-    class Slack:
+    class MockMessenger(Messenger):
         def __init__(self):
             self.counter = 0
 
         def send_message(self, _: str) -> None:
             self.counter += 1
 
-    slack = Slack()
+    messenger = MockMessenger()
 
-    slashed_validators = SlashedValidators(slack)  # type: ignore
+    slashed_validators = SlashedValidators(messenger)  # type: ignore
 
     total_exited_slashed_index_to_validator = {
         42: Validator(pubkey="0x1234", effective_balance=32000000000, slashed=True),
@@ -54,7 +55,7 @@ def test_process_slashed_validators():
 
     assert metric_total_slashed_validators_count.collect()[0].samples[0].value == 7  # type: ignore
     assert metric_our_slashed_validators_count.collect()[0].samples[0].value == 3  # type: ignore
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
     assert (
         slashed_validators._SlashedValidators__total_exited_slashed_indexes  # type: ignore
@@ -90,7 +91,7 @@ def test_process_slashed_validators():
 
     assert metric_total_slashed_validators_count.collect()[0].samples[0].value == 8  # type: ignore
     assert metric_our_slashed_validators_count.collect()[0].samples[0].value == 4  # type: ignore
-    assert slack.counter == 1
+    assert messenger.counter == 1
 
     assert (
         slashed_validators._SlashedValidators__total_exited_slashed_indexes  # type: ignore

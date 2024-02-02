@@ -5,8 +5,9 @@ import functools
 from prometheus_client import Counter
 
 from .beacon import Beacon, NoBlockError
+from .messengers import Messenger
 from .models import Block, BlockIdentierType
-from .utils import NB_SLOT_PER_EPOCH, Slack
+from .utils import NB_SLOT_PER_EPOCH
 
 print = functools.partial(print, flush=True)
 
@@ -26,7 +27,7 @@ def process_missed_blocks_head(
     potential_block: Block | None,
     slot: int,
     our_pubkeys: set[str],
-    slack: Slack | None,
+    messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
 ) -> bool:
     """Process missed block proposals detection at head
@@ -36,7 +37,7 @@ def process_missed_blocks_head(
     potential_block: Potential block
     slot           : Slot
     our_pubkeys    : Set of our validators public keys
-    slack          : Slack instance
+    messenger          : Messenger instance
 
     Returns `True` if we had to propose the block, `False` otherwise
     """
@@ -78,14 +79,14 @@ def process_missed_blocks_head(
 
     print(message_console)
 
-    if slack is not None and missed and is_our_validator:
+    if messenger is not None and missed and is_our_validator:
         message_slack = (
             f"{emoji} {'Our ' if is_our_validator else '    '}validator "
             f"`{short_proposer_pubkey}` {proposed_or_missed} block at head at epoch "
             f"`{epoch}` - slot `{slot}` {emoji}"
         )
 
-        slack.send_message(message_slack)
+        messenger.send_message(message_slack)
 
     if is_our_validator and missed:
         metric_missed_block_proposals_head_count.inc()
@@ -98,7 +99,7 @@ def process_missed_blocks_finalized(
     last_processed_finalized_slot: int,
     slot: int,
     our_pubkeys: set[str],
-    slack: Slack | None,
+    messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
 ) -> int:
     """Process missed block proposals detection at finalized
@@ -108,7 +109,7 @@ def process_missed_blocks_finalized(
     potential_block: Potential block
     slot           : Slot
     our_pubkeys    : Set of our validators public keys
-    slack          : Slack instance
+    messenger          : Messenger instance
 
     Returns the last finalized slot
     """
@@ -159,13 +160,13 @@ def process_missed_blocks_finalized(
 
             print(message_console)
 
-            if slack is not None:
+            if messenger is not None:
                 message_slack = (
                     f"❌ Our validator `{short_proposer_pubkey}` missed block at "
                     f"finalized at epoch {epoch}` - slot `{slot_}` ❌"
                 )
 
-                slack.send_message(message_slack)
+                messenger.send_message(message_slack)
 
             metric_missed_block_proposals_finalized_count.inc()
 

@@ -9,6 +9,7 @@ from eth_validator_watcher.missed_blocks import (
     process_missed_blocks_finalized,
 )
 from eth_validator_watcher.models import BlockIdentierType, Header, ProposerDuties
+from eth_validator_watcher.messengers import Messenger
 
 
 def test_process_missed_blocks_finalized_future_slot() -> None:
@@ -19,7 +20,7 @@ def test_process_missed_blocks_finalized_future_slot() -> None:
 def test_process_missed_blocks_finalized_nominal() -> None:
     Data = ProposerDuties.Data
 
-    class Slack:
+    class MockMessenger(Messenger):
         def __init__(self) -> None:
             self.counter = 0
 
@@ -172,7 +173,7 @@ def test_process_missed_blocks_finalized_nominal() -> None:
             return epoch_to_duties[epoch]
 
     beacon = Beacon()
-    slack = Slack()
+    messenger = MockMessenger()
 
     counter_before = metric_missed_block_proposals_finalized_count.collect()[0].samples[0].value  # type: ignore
 
@@ -193,7 +194,7 @@ def test_process_missed_blocks_finalized_nominal() -> None:
                 "0x68",  # proposed - slot: 100
                 "0x69",  # too late - slot: 101
             },
-            slack,  # type: ignore
+            messenger,
         )
         == 100
     )
@@ -201,4 +202,4 @@ def test_process_missed_blocks_finalized_nominal() -> None:
     counter_after = metric_missed_block_proposals_finalized_count.collect()[0].samples[0].value  # type: ignore
     delta = counter_after - counter_before
     assert delta == 2
-    assert slack.counter == 2
+    assert messenger.counter == 2

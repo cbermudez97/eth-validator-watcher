@@ -8,12 +8,13 @@ from eth_validator_watcher.fee_recipient import (
     metric_wrong_fee_recipient_proposed_block_count,
 )
 from eth_validator_watcher.models import Block, ExecutionBlock, Validators
+from eth_validator_watcher.messengers import Messenger
 from tests.fee_recipient import assets
 
 Validator = Validators.DataItem.Validator
 
 
-class Slack:
+class MockMessenger(Messenger):
     def __init__(self):
         self.counter = 0
 
@@ -55,7 +56,7 @@ def block() -> Block:
 
 
 def test_execution_is_none():
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -63,17 +64,17 @@ def test_execution_is_none():
         index_to_validator={},
         execution=None,
         expected_fee_recipient="0x1234",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before
 
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
 
 def test_fee_recipient_is_none():
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -81,14 +82,14 @@ def test_fee_recipient_is_none():
         index_to_validator={},
         execution="execution",  # type: ignore
         expected_fee_recipient=None,
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
 
 def test_not_our_validator(block: Block):
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -96,17 +97,17 @@ def test_not_our_validator(block: Block):
         index_to_validator={},
         execution="execution",  # type: ignore
         expected_fee_recipient="0x1234",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before
 
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
 
 def test_our_validator_allright(block: Block):
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -118,17 +119,17 @@ def test_our_validator_allright(block: Block):
         },
         execution="execution",  # type: ignore
         expected_fee_recipient="0xebec795c9c8bbd61ffc14a6662944748f299cacf",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before
 
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
 
 def test_our_validator_ok_in_last_tx(block: Block):
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -140,17 +141,17 @@ def test_our_validator_ok_in_last_tx(block: Block):
         },
         execution=Execution(),  # type: ignore
         expected_fee_recipient="0x760a6314a1d207377271917075f88e520141d55f",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before
 
-    assert slack.counter == 0
+    assert messenger.counter == 0
 
 
 def test_our_validator_not_ok_empty_block(block: Block):
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -162,17 +163,17 @@ def test_our_validator_not_ok_empty_block(block: Block):
         },
         execution=ExecutionEmptyBlock(),  # type: ignore
         expected_fee_recipient="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before + 1
 
-    assert slack.counter == 1
+    assert messenger.counter == 1
 
 
 def test_our_validator_not_ok(block: Block):
-    slack = Slack()
+    messenger = MockMessenger()
     counter_before = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
 
     process_fee_recipient(
@@ -184,10 +185,10 @@ def test_our_validator_not_ok(block: Block):
         },
         execution=Execution(),  # type: ignore
         expected_fee_recipient="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        slack=slack,  # type: ignore
+        messenger=messenger,  # type: ignore
     )
 
     counter_after = metric_wrong_fee_recipient_proposed_block_count.collect()[0].samples[0].value  # type: ignore
     assert counter_after == counter_before + 1
 
-    assert slack.counter == 1
+    assert messenger.counter == 1

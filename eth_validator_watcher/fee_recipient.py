@@ -4,8 +4,9 @@
 from prometheus_client import Counter
 
 from .execution import Execution
+from .messengers import Messenger
 from .models import Block, Validators
-from .utils import NB_SLOT_PER_EPOCH, Slack
+from .utils import NB_SLOT_PER_EPOCH
 
 metric_wrong_fee_recipient_proposed_block_count = Counter(
     "wrong_fee_recipient_proposed_block_count",
@@ -18,7 +19,7 @@ def process_fee_recipient(
     index_to_validator: dict[int, Validators.DataItem.Validator],
     execution: Execution | None,
     expected_fee_recipient: str | None,
-    slack: Slack | None,
+    messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
 ) -> None:
     """Check if the fee recipient is the one expected.
@@ -30,7 +31,7 @@ def process_fee_recipient(
         value: validator data corresponding to the validator index
     execution             : Optional execution client
     expected_fee_recipient: The expected fee recipient
-    slack                 : Optional slack client
+    messenger                 : Optional messenger instance
     """
 
     # No expected fee recipient set, nothing to do
@@ -91,7 +92,7 @@ def process_fee_recipient(
 
     print(message)
 
-    if slack is not None:
-        slack.send_message(message)
+    if messenger is not None:
+        messenger.send_message(message)
 
     metric_wrong_fee_recipient_proposed_block_count.inc()

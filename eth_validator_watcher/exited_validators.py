@@ -5,7 +5,7 @@ validators."""
 from prometheus_client import Gauge
 
 from .models import Validators
-from .utils import Slack
+from .messengers import Messenger
 
 metric_our_exited_validators_count = Gauge(
     "our_exited_validators_count",
@@ -16,14 +16,14 @@ metric_our_exited_validators_count = Gauge(
 class ExitedValidators:
     """Exited validators abstraction."""
 
-    def __init__(self, slack: Slack | None) -> None:
+    def __init__(self, messenger: Messenger | None) -> None:
         """Exited validators
 
         Parameters:
-        slack: Optional slack client
+        messenger: Optional messenger instance
         """
         self.__our_exited_unslashed_indexes: set[int] | None = None
-        self.__slack = slack
+        self.__messenger = messenger
 
     def process(
         self,
@@ -66,7 +66,7 @@ class ExitedValidators:
             message = f"🚶 Our validator {our_exited_unslashed_index_to_validator[index].pubkey[:10]} is exited"
             print(message)
 
-            if self.__slack is not None:
-                self.__slack.send_message(message)
+            if self.__messenger is not None:
+                self.__messenger.send_message(message)
 
         self.__our_exited_unslashed_indexes = our_exited_unslashed_indexes

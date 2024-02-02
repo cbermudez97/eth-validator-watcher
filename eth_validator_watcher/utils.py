@@ -222,15 +222,6 @@ def write_liveness_file(liveness_file: Path):
         file_descriptor.write("OK")
 
 
-class Slack:
-    def __init__(self, channel: str, token: str) -> None:
-        self.__channel = channel
-        self.__client = WebClient(token=token)
-
-    def send_message(self, message: str) -> None:
-        self.__client.chat_postMessage(channel=self.__channel, text=message)
-
-
 def slots(
     genesis_time_sec: int,
     seconds_per_slot: int = NB_SECOND_PER_SLOT,

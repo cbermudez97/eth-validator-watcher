@@ -1,4 +1,4 @@
-from eth_validator_watcher import utils
+from eth_validator_watcher.messengers import slack
 
 
 class WebClient:
@@ -10,9 +10,9 @@ class WebClient:
         assert text == "MY TEXT"
 
 
-utils.WebClient = WebClient  # type: ignore
+slack.WebClient = WebClient  # type: ignore
 
 
 def test_slack() -> None:
-    slack = utils.Slack("MY CHANNEL", "my_slack_token")
-    slack.send_message("MY TEXT")
+    slack_notifier = slack.Slack("MY CHANNEL", "my_slack_token")
+    slack_notifier.send_message("MY TEXT")

@@ -7,8 +7,9 @@ from prometheus_client import Gauge
 from eth_validator_watcher.models import BeaconType
 
 from .beacon import Beacon
+from .messengers import Messenger
 from .models import Validators
-from .utils import LimitedDict, Slack
+from .utils import LimitedDict
 
 print = functools.partial(print, flush=True)
 
@@ -86,7 +87,7 @@ def process_double_missed_attestations(
     previous_dead_indexes: set[int],
     epoch_to_index_to_validator_index: LimitedDict,
     epoch: int,
-    slack: Slack | None,
+    messenger: Messenger | None,
 ) -> set[int]:
     """Process double missed attestations.
 
@@ -102,7 +103,7 @@ def process_double_missed_attestations(
         inner value           : validators
 
     epoch                        : Epoch where the missed attestations are checked
-    slack                        : Slack instance
+    messenger                        : Messenger instance
     """
     if epoch < 2:
         return set()
@@ -131,13 +132,13 @@ def process_double_missed_attestations(
 
     print(message_console)
 
-    if slack is not None:
+    if messenger is not None:
         message_slack = (
             f"😱 Our validator `{short_first_pubkeys_str}` and "
             f"`{len(double_dead_indexes) - len(short_first_pubkeys)}` more "
             f"missed 2 attestations in a row from epoch `{epoch - 2}`"
         )
 
-        slack.send_message(message_slack)
+        messenger.send_message(message_slack)
 
     return double_dead_indexes

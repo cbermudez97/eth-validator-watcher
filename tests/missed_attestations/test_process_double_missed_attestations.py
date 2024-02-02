@@ -2,6 +2,7 @@ from typing import Set
 
 from eth_validator_watcher.missed_attestations import process_double_missed_attestations
 from eth_validator_watcher.models import Validators
+from eth_validator_watcher.messengers import Messenger
 from eth_validator_watcher.utils import LimitedDict
 
 Validator = Validators.DataItem.Validator
@@ -23,14 +24,14 @@ def test_process_double_missed_attestations_low_epoch() -> None:
 
 
 def test_process_double_missed_attestations_some_dead_indexes() -> None:
-    class Slack:
+    class MockMessenger(Messenger):
         def __init__(self):
             self.counter = 0
 
         def send_message(self, _: str) -> None:
             self.counter += 1
 
-    slack = Slack()
+    messenger = MockMessenger()
 
     epoch_to_index_to_validator_index = LimitedDict(2)
     epoch_to_index_to_validator_index[1663] = {
@@ -47,12 +48,12 @@ def test_process_double_missed_attestations_some_dead_indexes() -> None:
         {40, 41, 42, 43},
         epoch_to_index_to_validator_index,
         1664,
-        slack,  # type: ignore
+        messenger,
     )
 
     expected = {42, 43}
     assert expected == actual
-    assert slack.counter == 1
+    assert messenger.counter == 1
 
 
 def test_process_double_missed_attestations_no_dead_indexes() -> None:
