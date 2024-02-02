@@ -660,21 +660,6 @@ files = [
 ]
 
 [[package]]
-name = "slack-sdk"
-version = "3.23.0"
-description = "The Slack API Platform SDK for Python"
-optional = false
-python-versions = ">=3.6.0"
-files = [
-    {file = "slack_sdk-3.23.0-py2.py3-none-any.whl", hash = "sha256:2a8513505cced20ceee22b5b49c11d9545caa6234b56bf0ad47133ea5b357d10"},
-    {file = "slack_sdk-3.23.0.tar.gz", hash = "sha256:9d6ebc4ff74e7983e1b27dbdb0f2bb6fc3c2a2451694686eaa2be23bbb085a73"},
-]
-
-[package.extras]
-optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=10,<11)"]
-testing = ["Flask (>=1,<2)", "Flask-Sockets (>=0.2,<1)", "Jinja2 (==3.0.3)", "Werkzeug (<2)", "black (==22.8.0)", "boto3 (<=2)", "click (==8.0.4)", "flake8 (>=5,<6)", "itsdangerous (==1.1.0)", "moto (>=3,<4)", "psutil (>=5,<6)", "pytest (>=6.2.5,<7)", "pytest-asyncio (<1)", "pytest-cov (>=2,<3)"]
-
-[[package]]
 name = "tenacity"
 version = "8.2.3"
 description = "Retry code until it succeeds"
@@ -740,4 +725,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b2c1523a63b4321c89e1dd6a874059ca0fde1b5f06e352f16ecd32c9e6d13ebb"
+content-hash = "e73d955b5f44aee23c3b6ee216b171022ca4c65ff4017e8ea6e9d03eb3c76578"
