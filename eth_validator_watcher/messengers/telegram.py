@@ -4,12 +4,18 @@ from .base import Messenger
 
 
 class Telegram(Messenger):
-    def __init__(self, token: str, chat_id: str) -> None:
+    def __init__(self, chat_id: str, token: str) -> None:
         self.__token = token
         self.__chat_id = chat_id
 
     def send_message(self, message: str) -> None:
-        r.post(
+        response = r.post(
             f"https://api.telegram.org/bot{self.__token}/sendMessage",
-            data={"chat_id": self.__chat_id, "text": message},
+            json={
+                "chat_id": self.__chat_id,
+                "text": message,
+                "parse_mode": "Markdown",
+            },
         )
+        if not response.ok:
+            print(f"❗ Failed to send message to Telegram: {response}")

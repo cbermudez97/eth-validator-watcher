@@ -8,4 +8,6 @@ class Slack(Messenger):
         self.__client = WebClient(token=token)
 
     def send_message(self, message: str) -> None:
-        self.__client.chat_postMessage(channel=self.__channel, text=message)
+        response = self.__client.chat_postMessage(channel=self.__channel, text=message)
+        if not response["ok"]:
+            print(f"❗ Failed to send message to Slack: {response}")
