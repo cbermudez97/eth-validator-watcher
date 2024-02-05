@@ -29,6 +29,7 @@ def test_fee_recipient_set_while_execution_url_not_set() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            explorer_url=None,
         )
 
 
@@ -45,6 +46,7 @@ def test_fee_recipient_not_valid() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            explorer_url=None,
         )
 
 
@@ -61,6 +63,7 @@ def test_slack_token_not_defined() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            explorer_url=None,
         )
 
 
@@ -113,6 +116,7 @@ def test_invalid_pubkeys() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            explorer_url=None,
         )
 
 
@@ -171,6 +175,7 @@ def test_chain_not_ready() -> None:
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=[],
         liveness_file=Path("/path/to/liveness"),
+        explorer_url=None,
     )
 
 
@@ -280,6 +285,7 @@ def test_nominal() -> None:
         epoch_to_index_to_validator_index: LimitedDict,
         epoch: int,
         messenger: Messenger,
+        explorer_url: str | None = None,
     ) -> set[int]:
         assert indexes_that_missed_attestation == {0, 4}
         assert indexes_that_previously_missed_attestation == set()
@@ -314,6 +320,7 @@ def test_nominal() -> None:
         pubkeys: set[str],
         messenger: Messenger,
         slots_per_epoch: int = 32,
+        explorer_url: str | None = None,
     ) -> int:
         assert isinstance(beacon, Beacon)
         assert last_processed_finalized_slot == 63
@@ -348,6 +355,7 @@ def test_nominal() -> None:
         pubkeys: set[str],
         messenger: Messenger,
         slots_per_epoch: int = 32,
+        explorer_url: str | None = None,
     ) -> bool:
         assert isinstance(beacon, Beacon)
         assert potential_block == "A BLOCK"
@@ -409,6 +417,7 @@ def test_nominal() -> None:
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=["http://my-awesome-relay.com"],
         liveness_file=Path("/path/to/liveness"),
+        explorer_url=None,
     )
 
     assert Coinbase.nb_calls == 2

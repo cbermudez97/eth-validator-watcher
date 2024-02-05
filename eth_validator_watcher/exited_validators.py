@@ -16,14 +16,20 @@ metric_our_exited_validators_count = Gauge(
 class ExitedValidators:
     """Exited validators abstraction."""
 
-    def __init__(self, messenger: Messenger | None) -> None:
+    def __init__(
+        self,
+        messenger: Messenger | None,
+        explorer_url: str | None = None,
+    ) -> None:
         """Exited validators
 
         Parameters:
         messenger: Optional messenger instance
+        explorer_url: Optional beacon explorer URL
         """
         self.__our_exited_unslashed_indexes: set[int] | None = None
         self.__messenger = messenger
+        self.__explorer_url = explorer_url
 
     def process(
         self,
@@ -67,6 +73,15 @@ class ExitedValidators:
             print(message)
 
             if self.__messenger is not None:
-                self.__messenger.send_message(message)
+                proposer_link = (
+                    f"`{our_exited_unslashed_index_to_validator[index].pubkey[:10]}`"
+                )
+                if self.__explorer_url:
+                    proposer_link = (
+                        f"[{our_exited_unslashed_index_to_validator[index].pubkey[:10]}]"
+                        f"({self.__explorer_url}/validator/{our_exited_unslashed_index_to_validator[index].pubkey})"
+                    )
+                formatted_message = f"🚶 Our validator {proposer_link} is exited"
+                self.__messenger.send_message(formatted_message)
 
         self.__our_exited_unslashed_indexes = our_exited_unslashed_indexes

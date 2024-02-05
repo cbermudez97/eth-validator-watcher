@@ -21,6 +21,7 @@ def process_fee_recipient(
     expected_fee_recipient: str | None,
     messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
+    explorer_url: str | None = None,
 ) -> None:
     """Check if the fee recipient is the one expected.
 
@@ -31,7 +32,9 @@ def process_fee_recipient(
         value: validator data corresponding to the validator index
     execution             : Optional execution client
     expected_fee_recipient: The expected fee recipient
-    messenger                 : Optional messenger instance
+    messenger             : Optional messenger instance
+    slots_per_epoch       : Slots per epoch
+    explorer_url          : Beacon explorer URL
     """
 
     # No expected fee recipient set, nothing to do
@@ -93,6 +96,19 @@ def process_fee_recipient(
     print(message)
 
     if messenger is not None:
-        messenger.send_message(message)
+        proposer_pubkey_link = f"`{short_proposer_pubkey}`"
+        epoch_link = f"`{epoch}`"
+        slot_link = f"`{slot}`"
+        if explorer_url:
+            proposer_pubkey_link = f"[{short_proposer_pubkey}]({explorer_url}/validator/{index_to_validator[proposer_index].pubkey})"
+            epoch_link = f"[{epoch}]({explorer_url}/epoch/{epoch})"
+            slot_link = f"[{slot}]({explorer_url}/slot/{slot})"
+        formatted_message = (
+            f"🚩 Our validator {proposer_pubkey_link} "
+            f"proposed block at epoch {epoch_link} - slot {slot_link} "
+            "with the wrong fee recipient"
+        )
+
+        messenger.send_message(formatted_message)
 
     metric_wrong_fee_recipient_proposed_block_count.inc()

@@ -19,15 +19,21 @@ metric_total_slashed_validators_count = Gauge(
 class SlashedValidators:
     """Slashed validators abstraction."""
 
-    def __init__(self, messenger: Messenger | None) -> None:
+    def __init__(
+        self,
+        messenger: Messenger | None,
+        explorer_url: str | None = None,
+    ) -> None:
         """Slashed validators
 
         Parameters:
         messenger: Optional messenger instance
+        explorer_url: Optional beacon explorer URL
         """
         self.__total_exited_slashed_indexes: set[int] | None = None
         self.__our_exited_slashed_indexes: set[int] | None = None
         self.__messenger = messenger
+        self.__explorer_url = explorer_url
 
     def process(
         self,
@@ -106,7 +112,10 @@ class SlashedValidators:
             )
 
         for index in our_new_exited_slashed_indexes:
-            message = f"🔕 Our validator {our_exited_slashed_index_to_validator[index].pubkey[:10]} is slashed"
+            our_exited_validator = our_exited_slashed_index_to_validator[index]
+            message = f"🔕 Our validator {our_exited_validator.pubkey[:10]} is slashed"
+            if self.__explorer_url:
+                message += f"🔕 Our validator [{our_exited_validator.pubkey[:10]}]({self.__explorer_url}/validator/{our_exited_validator.pubkey}) is slashed"
             print(message)
 
             if self.__messenger is not None:

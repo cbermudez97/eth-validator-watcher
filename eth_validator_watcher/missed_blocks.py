@@ -29,6 +29,7 @@ def process_missed_blocks_head(
     our_pubkeys: set[str],
     messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
+    explorer_url: str | None = None,
 ) -> bool:
     """Process missed block proposals detection at head
 
@@ -37,7 +38,9 @@ def process_missed_blocks_head(
     potential_block: Potential block
     slot           : Slot
     our_pubkeys    : Set of our validators public keys
-    messenger          : Messenger instance
+    messenger      : Messenger instance
+    slots_per_epoch: Slots per epoch
+    explorer_url   : Beacon Explorer URL
 
     Returns `True` if we had to propose the block, `False` otherwise
     """
@@ -80,13 +83,23 @@ def process_missed_blocks_head(
     print(message_console)
 
     if messenger is not None and missed and is_our_validator:
-        message_slack = (
+        proposer_pubkey_link = f"`{short_proposer_pubkey}`"
+        epoch_link = f"`{epoch}`"
+        slot_link = f"`{slot}`"
+        if explorer_url:
+            proposer_pubkey_link = (
+                f"[{short_proposer_pubkey}]({explorer_url}/validator/{proposer_pubkey})"
+            )
+            epoch_link = f"[{epoch}]({explorer_url}/epoch/{epoch})"
+            slot_link = f"[{slot}]({explorer_url}/slot/{slot})"
+
+        formatted_message = (
             f"{emoji} {'Our ' if is_our_validator else '    '}validator "
-            f"`{short_proposer_pubkey}` {proposed_or_missed} block at head at epoch "
-            f"`{epoch}` - slot `{slot}` {emoji}"
+            f"{proposer_pubkey_link} {proposed_or_missed} block at head at epoch "
+            f"{epoch_link} - slot {slot_link} {emoji}"
         )
 
-        messenger.send_message(message_slack)
+        messenger.send_message(formatted_message)
 
     if is_our_validator and missed:
         metric_missed_block_proposals_head_count.inc()
@@ -101,6 +114,7 @@ def process_missed_blocks_finalized(
     our_pubkeys: set[str],
     messenger: Messenger | None,
     slots_per_epoch: int = NB_SLOT_PER_EPOCH,
+    explorer_url: str | None = None,
 ) -> int:
     """Process missed block proposals detection at finalized
 
@@ -109,7 +123,9 @@ def process_missed_blocks_finalized(
     potential_block: Potential block
     slot           : Slot
     our_pubkeys    : Set of our validators public keys
-    messenger          : Messenger instance
+    messenger      : Messenger instance
+    slots_per_epoch: Slots per epoch
+    explorer_url   : Beacon Explorer URL
 
     Returns the last finalized slot
     """
@@ -161,12 +177,19 @@ def process_missed_blocks_finalized(
             print(message_console)
 
             if messenger is not None:
-                message_slack = (
-                    f"❌ Our validator `{short_proposer_pubkey}` missed block at "
-                    f"finalized at epoch {epoch}` - slot `{slot_}` ❌"
+                proposer_pubkey_link = f"`{short_proposer_pubkey}`"
+                epoch_link = f"`{epoch}`"
+                slot_link = f"`{slot_}`"
+                if explorer_url:
+                    proposer_pubkey_link = f"[{short_proposer_pubkey}]({explorer_url}/validator/{proposer_pubkey})"
+                    epoch_link = f"[{epoch}]({explorer_url}/epoch/{epoch})"
+                    slot_link = f"[{slot_}]({explorer_url}/slot/{slot_})"
+                formatted_message = (
+                    f"❌ Our validator {proposer_pubkey_link} missed block at "
+                    f"finalized at epoch {epoch_link} - slot {slot_link} ❌"
                 )
 
-                messenger.send_message(message_slack)
+                messenger.send_message(formatted_message)
 
             metric_missed_block_proposals_finalized_count.inc()
 

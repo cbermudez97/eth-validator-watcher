@@ -122,6 +122,9 @@ def handler(
     liveness_file: Optional[Path] = Option(
         None, help="Liveness file", show_default=False
     ),
+    explorer_url: Optional[str] = Option(
+        None, help="URL of beacon chain explorer", show_default=False
+    ),
 ) -> None:
     """
     🚨 Ethereum Validator Watcher 🚨
@@ -186,6 +189,7 @@ def handler(
             beacon_type,
             relay_url,
             liveness_file,
+            explorer_url,
         )
     except KeyboardInterrupt:  # pragma: no cover
         print("👋     Bye!")
@@ -202,6 +206,7 @@ def _handler(
     beacon_type: BeaconType,
     relays_url: List[str],
     liveness_file: Path | None,
+    explorer_url: str | None,
 ) -> None:
     """Just a wrapper to be able to test the handler function"""
     slack_token = environ.get("SLACK_TOKEN")
@@ -266,8 +271,8 @@ def _handler(
     our_epoch2active_idx2val = LimitedDict(3)
     net_epoch2active_idx2val = LimitedDict(3)
 
-    exited_validators = ExitedValidators(messenger)
-    slashed_validators = SlashedValidators(messenger)
+    exited_validators = ExitedValidators(messenger, explorer_url=explorer_url)
+    slashed_validators = SlashedValidators(messenger, explorer_url=explorer_url)
 
     last_missed_attestations_process_epoch: int | None = None
     last_rewards_process_epoch: int | None = None
@@ -398,7 +403,10 @@ def _handler(
         if should_process_missed_attestations:
             our_validators_indexes_that_missed_attestation = (
                 process_missed_attestations(
-                    beacon, beacon_type, our_epoch2active_idx2val, epoch
+                    beacon,
+                    beacon_type,
+                    our_epoch2active_idx2val,
+                    epoch,
                 )
             )
 
@@ -408,6 +416,7 @@ def _handler(
                 our_epoch2active_idx2val,
                 epoch,
                 messenger,
+                explorer_url=explorer_url,
             )
 
             last_missed_attestations_process_epoch = epoch
@@ -444,6 +453,7 @@ def _handler(
             our_pubkeys,
             messenger,
             slots_per_epoch=slots_per_epoch,
+            explorer_url=explorer_url,
         )
 
         delta_sec = MISSED_BLOCK_TIMEOUT_SEC - (time() - slot_start_time_sec)
@@ -469,6 +479,7 @@ def _handler(
                 fee_recipient,
                 messenger,
                 slots_per_epoch=slots_per_epoch,
+                explorer_url=explorer_url,
             )
 
         is_our_validator = process_missed_blocks_head(
@@ -478,6 +489,7 @@ def _handler(
             our_pubkeys,
             messenger,
             slots_per_epoch=slots_per_epoch,
+            explorer_url=explorer_url,
         )
 
         if is_our_validator and potential_block is not None:

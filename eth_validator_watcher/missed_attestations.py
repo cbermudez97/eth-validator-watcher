@@ -88,22 +88,24 @@ def process_double_missed_attestations(
     epoch_to_index_to_validator_index: LimitedDict,
     epoch: int,
     messenger: Messenger | None,
+    explorer_url: str | None = None,
 ) -> set[int]:
     """Process double missed attestations.
 
     Parameters:
-    dead_indexes                 : Set of indexes of the validators that missed
-                                   attestations
-    previous_dead_indexes        : Set of indexes of the validators that missed
-                                   attestations in the previous epoch
+    dead_indexes               : Set of indexes of the validators that missed
+                                attestations
+    previous_dead_indexes      : Set of indexes of the validators that missed
+                                attestations in the previous epoch
 
-    epoch_to_index_to_validator  : Limited dictionary with:
-        outer key             : epoch
-        outer value, inner key: validator indexes
-        inner value           : validators
+    epoch_to_index_to_validator: Limited dictionary with:
+        outer key              : epoch
+        outer value, inner key : validator indexes
+        inner value            : validators
 
-    epoch                        : Epoch where the missed attestations are checked
-    messenger                        : Messenger instance
+    epoch                      : Epoch where the missed attestations are checked
+    messenger                  : Messenger instance
+    explorer_url               : Beacon explorer URL
     """
     if epoch < 2:
         return set()
@@ -133,12 +135,22 @@ def process_double_missed_attestations(
     print(message_console)
 
     if messenger is not None:
-        message_slack = (
-            f"😱 Our validator `{short_first_pubkeys_str}` and "
+        proposer_pubkey_link = f"`{short_first_pubkeys_str}`"
+        epoch_link = f"`{epoch - 2}`"
+        if explorer_url:
+            proposer_pubkey_link = ", ".join(
+                [
+                    f"[{index_to_validator[proposer_index].pubkey[:10]}]({explorer_url}/validator/{index_to_validator[proposer_index].pubkey})"
+                    for proposer_index in double_dead_indexes
+                ]
+            )
+            epoch_link = f"[{epoch - 2}]({explorer_url}/epoch/{epoch - 2})"
+        formatted_message = (
+            f"😱 Our validator {proposer_pubkey_link} and "
             f"`{len(double_dead_indexes) - len(short_first_pubkeys)}` more "
-            f"missed 2 attestations in a row from epoch `{epoch - 2}`"
+            f"missed 2 attestations in a row from epoch {epoch_link}"
         )
 
-        messenger.send_message(message_slack)
+        messenger.send_message(formatted_message)
 
     return double_dead_indexes
