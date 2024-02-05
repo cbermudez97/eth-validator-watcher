@@ -26,6 +26,7 @@ class Slack(Messenger):
             json={
                 "channel": self.__channel,
                 "text": message,
+                "unfurl_links": False,
             },
         )
         if not response.ok:
